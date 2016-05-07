@@ -19,7 +19,7 @@ class WeiboItem(scrapy.Item):
     PostTime = scrapy.Field()
 
 class UserItem(scrapy.Item):
-    """docstring for UserItem"""
+
     UID = scrapy.Field()
     Name = scrapy.Field()
     FansNum = scrapy.Field()

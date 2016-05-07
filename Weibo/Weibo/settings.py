@@ -16,7 +16,8 @@ NEWSPIDER_MODULE = 'Weibo.spiders'
 DOWNLOAD_HANDLERS = {'s3': None}
 
 DOWNLOADER_MIDDLEWARES = {
-    'Weibo.middlewares.CustomUserAgentMiddleware': 401
+    'Weibo.middlewares.CustomUserAgentMiddleware': 401,
+    'Weibo.middlewares.CustomCookieMiddleware': 402,
 }
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
