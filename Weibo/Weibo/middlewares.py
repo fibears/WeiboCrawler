@@ -2,7 +2,7 @@
 # @Author: fibears
 # @Date:   2016-03-11 17:09:06
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-07 11:36:47
+# @Last Modified time: 2016-05-09 19:44:32
 
 import random
 from agents import AGENTS
