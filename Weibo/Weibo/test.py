@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# @Author: zengphil
+# @Author: fibears
 # @Date:   2016-05-04 18:40:00
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-08 23:16:00
+# @Last Modified time: 2016-05-09 13:48:14
 
 import urllib
 import urllib2
@@ -20,8 +20,8 @@ opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
 url = 'https://passport.weibo.cn/sso/login'
 
 PostData = urllib.urlencode({
-    'username': '250609365@qq.com',
-    'password': 'wunai123'
+    'username': 'xxxx@qq.com',
+    'password': 'xxxx'
 })
 
 headers = {
