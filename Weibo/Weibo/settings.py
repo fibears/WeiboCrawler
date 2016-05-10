@@ -20,6 +20,21 @@ DOWNLOADER_MIDDLEWARES = {
     'Weibo.middlewares.CustomCookieMiddleware': 402,
 }
 
+SQLDB = {
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'root',
+    'passwd': 'mysqlpasswd',
+    'db': 'Weibo'
+}
+
+ITEM_PIPELINES = {
+    'Weibo.pipelines.WeiboPipeline': 300,
+    #'template.pipelines.RedisPipeline': 301,
+}
+
+download_delay=1
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'Weibo (+http://www.yourdomain.com)'
 

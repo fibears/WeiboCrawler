@@ -3,11 +3,12 @@
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-09 23:32:33
+# @Last Modified time: 2016-05-10 14:41:55
 
 import time
 import pickle
 import random
+import re
 
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
@@ -30,10 +31,11 @@ class WeiboSpider(CrawlSpider):
     allow_domains = [
         "m.weibo.cn"
     ]
+    search_content = u'西二旗'
+
     start_urls = [
-        "http://m.weibo.cn/searchs"
+        "http://m.weibo.cn/k/" + search_content + '?from=feed'
     ]
-    search_content = u'#西二旗#'
 
     def __init__(self):
         with open("Weibo/cookie.txt", "r") as f:
@@ -48,10 +50,7 @@ class WeiboSpider(CrawlSpider):
     def parse(self, response):
         """加载页面并提取目标URL"""
         self.driver.get(response.url)
-        Searchs = self.driver.find_element_by_xpath("//input[@name='queryVal']")
-        Searchs.send_keys(self.search_content)
-        Searchs.send_keys(Keys.ENTER)
-        Page = self.driver.find_element_by_xpath('//*[@class="module-topbar"]/a[2]')
+        Page = self.driver.find_element_by_xpath('//*[@class="module-topbar transparent"]/a[2]')
         for i in xrange(1,10):
             time.sleep(2)
             Page.send_keys(Keys.PAGE_DOWN)
@@ -64,13 +63,12 @@ class WeiboSpider(CrawlSpider):
                 print URL1[i].get_attribute('data-jump')
                 ContentURL.append('http://m.weibo.cn' + URL1[i].get_attribute('data-jump'))
         # Extract Users URL #
-        URL2 = self.driver.find_elements_by_xpath("//a[@class='mod-media size-xs']")
+        URL2 = self.driver.find_elements_by_xpath("//div[contains(@class,'line-around')]/header/a[contains(@class, 'mod-media')]")
         UserURL = []
         for i in xrange(0, len(URL2)):
             if URL2[i].get_attribute('href') != None:
                 UserURL.append(URL2[i].get_attribute('href'))
 
-        self.driver.close()
         # Parse URL By Different Parse Function #
         for content_url in ContentURL:
             headers = {
@@ -85,16 +83,19 @@ class WeiboSpider(CrawlSpider):
     # Parse Content Information #
     def parseContent(self, response):
         self.logger.info("This url has been identified - " + response.url)
-        # Mydriver = self.driver
-        # Mydriver.get(response.url)
+        self.driver.get(response.url)
+        pattern = re.compile(r'http://m.weibo.cn/(\d{10})/.*?')
         # Weibo Content #
         weiboItem = WeiboItem()
-        # print response
-        selector = Selector(response)
-
-        content = selector.xpath("//p[contains(@href,'feed')]/../text()").extract()
-        print content
-        # Mydriver.close()
+        time.sleep(2)
+        weiboItem['Url'] = response.url
+        weiboItem['Content'] = self.driver.find_elements_by_xpath("//a[@href='/k/西二旗?from=feed']/..")[0].text
+        weiboItem['UID'] = re.findall(pattern, response.url)[0]
+        weiboItem['Repost'] = self.driver.find_element_by_xpath("//span[@data-node='repost']/em").text
+        weiboItem['Comment'] = self.driver.find_element_by_xpath("//span[@data-node='comment']/em").text
+        weiboItem['Like'] = self.driver.find_element_by_xpath("//span[@data-node='like']/em").text
+        weiboItem['PostTime'] = self.driver.find_element_by_xpath("//span[@class='time']").text
+        # self.driver.close()
         return weiboItem
 
     # Parse Users Information #
