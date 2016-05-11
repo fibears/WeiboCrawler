@@ -3,12 +3,13 @@
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-10 14:41:55
+# @Last Modified time: 2016-05-11 23:18:31
 
 import time
 import pickle
 import random
 import re
+import numpy as np
 
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
@@ -16,7 +17,6 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.selector import Selector
 from datetime import datetime
 from scrapy.http import FormRequest, Request
-from bs4 import BeautifulSoup
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -67,6 +67,7 @@ class WeiboSpider(CrawlSpider):
         UserURL = []
         for i in xrange(0, len(URL2)):
             if URL2[i].get_attribute('href') != None:
+                print URL2[i].get_attribute('href')
                 UserURL.append(URL2[i].get_attribute('href'))
 
         # Parse URL By Different Parse Function #
@@ -77,11 +78,18 @@ class WeiboSpider(CrawlSpider):
             'Referer': content_url
             }
             yield Request(url = content_url, headers = headers, callback = self.parseContent)
-        # for user_url in UserURL:
-        #     yield Request(url = user_url, callback = self.parseUser)
+
+        for user_url in UserURL:
+            headers = {
+            'User-Agent': random.choice(AGENTS),
+            'Host': 'm.weibo.cn',
+            'Referer': user_url
+            }
+            yield Request(url = user_url, headers = headers, callback = self.parseUser)
 
     # Parse Content Information #
     def parseContent(self, response):
+        self.logger.info("Parse ContentInformation!!!")
         self.logger.info("This url has been identified - " + response.url)
         self.driver.get(response.url)
         pattern = re.compile(r'http://m.weibo.cn/(\d{10})/.*?')
@@ -96,9 +104,36 @@ class WeiboSpider(CrawlSpider):
         weiboItem['Like'] = self.driver.find_element_by_xpath("//span[@data-node='like']/em").text
         weiboItem['PostTime'] = self.driver.find_element_by_xpath("//span[@class='time']").text
         # self.driver.close()
-        return weiboItem
+        yield weiboItem
 
     # Parse Users Information #
+    def parseUser(self, response):
+        self.logger.info("Parse UserInformation!!!")
+        self.logger.info("This url has been identified - " + response.url)
+        self.driver.get(response.url)
+        pattern = re.compile(r'http://m.weibo.cn/u/(\d{10})')
+        # User Information #
+        userItem = UserItem()
+        time.sleep(2)
+        userItem['UID'] = re.findall(pattern, response.url)[0]
+        userItem['Name'] = self.driver.find_element_by_xpath("//div[@class= 'item-main txt-xl txt-cut']/span").text
+        userItem['FansNum'] = self.driver.find_element_by_xpath("//a[contains(@href, 'FANS')]/div[@class='mct-a txt-s']").text
+        FollowerNum = self.driver.find_element_by_xpath("//a[contains(@href, 'FOLLOWERS')]/div[@class='mct-a txt-s']").text
+        userItem['FollowerNum'] = FollowerNum
+
+        # New Page #
+        Follower_url = self.driver.find_element_by_xpath("//a[contains(@href, 'FOLLOWERS')]").get_attribute('href')
+        self.driver.get(Follower_url)
+        time.sleep(3)
+        Page = self.driver.find_element_by_xpath('//*[@class="module-topbar"]/a[2]')
+        for i in xrange(1,(np.int(FollowerNum)/10)+7):
+            time.sleep(2)
+            Page.send_keys(Keys.PAGE_DOWN)
+        Users = self.driver.find_elements_by_xpath("//div[@class='layout-box media-graphic']/a[1]")
+        UserList = [re.findall(pattern, user.get_attribute('href'))[0]  for user in Users]
+        userItem['Follower'] = '.'.join(UserList)
+
+        yield userItem
 
 
 

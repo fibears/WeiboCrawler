@@ -20,12 +20,11 @@ class WeiboItem(scrapy.Item):
     PostTime = scrapy.Field()
 
 class UserItem(scrapy.Item):
-    Url = scrapy.Field()
     UID = scrapy.Field()
     Name = scrapy.Field()
     FansNum = scrapy.Field()
     FollowerNum = scrapy.Field()
-    Fans = scrapy.Field()
+    # Fans = scrapy.Field()
     Follower = scrapy.Field()
 
 
