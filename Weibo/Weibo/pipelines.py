@@ -37,6 +37,7 @@ class WeiboPipeline(object):
 
                     weiboEntity = WeiboEntity(
                         Url = item_url,
+                        Name = item['Name'],
                         uid = item['UID'],
                         Content = item['Content'],
                         Repost = item['Repost'],

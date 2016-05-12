@@ -2,7 +2,7 @@
 # @Author: fibears
 # @Date:   2016-03-11 17:09:15
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-10 17:33:26
+# @Last Modified time: 2016-05-12 09:21:11
 
 from datetime import datetime
 from pony.orm import *
@@ -16,6 +16,7 @@ class WeiboEntity(db.Entity):
     _table_ = 'Content'
 
     id = PrimaryKey(int, size = 64, unsigned = True, auto = True)
+    Name = Optional(str)
     Url = Optional(str)
     uid = Required(str)
     Content = Optional(LongUnicode)
