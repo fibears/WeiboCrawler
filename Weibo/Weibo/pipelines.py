@@ -37,6 +37,7 @@ class WeiboPipeline(object):
 
                     weiboEntity = WeiboEntity(
                         Url = item_url,
+                        Type = item['Type'],
                         Name = item['Name'],
                         uid = item['UID'],
                         Content = item['Content'],
@@ -58,7 +59,6 @@ class WeiboPipeline(object):
 
                 with db_session:
                     userEntity = UserEntity.get(uid = item_uid)
-
                     if userEntity:
                         print('already have this uid item')
                         return
@@ -68,7 +68,7 @@ class WeiboPipeline(object):
                         Name = item['Name'],
                         FansNum = item['FansNum'],
                         FollowerNum = item['FollowerNum'],
-                        # Fans = item['Fans'],
+                        CrawlFollower = item['CrawlFollower'],
                         Follower = item['Follower']
                     )
 

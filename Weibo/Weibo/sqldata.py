@@ -2,7 +2,7 @@
 # @Author: fibears
 # @Date:   2016-05-12 09:22:41
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-05-12 14:07:08
+# @Last Modified time: 2016-05-21 11:55:38
 
 from pony.orm import *
 
@@ -22,6 +22,7 @@ class WeiboEntity(Newdb.Entity):
     _table_ = 'Content'
 
     id = PrimaryKey(int, size = 64, unsigned = True, auto = True)
+    Type = Optional(str)
     Name = Optional(str)
     Url = Optional(str)
     uid = Required(str)
@@ -41,6 +42,7 @@ class UserEntity(Newdb.Entity):
     Name = Optional(str)
     FansNum = Optional(str)
     FollowerNum = Optional(str)
+    CrawlFollower = Optional(str)
     # Fans = Optional(LongUnicode)
     Follower = Optional(LongUnicode)
 

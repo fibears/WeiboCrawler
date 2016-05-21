@@ -1,9 +1,14 @@
+# -*- coding: utf-8 -*-
+# @Author: zengphil
+# @Date:   2016-05-20 10:28:00
+# @Last Modified by:   zengphil
+# @Last Modified time: 2016-05-20 10:28:59
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
-# @Last Modified by:   fibears
-# @Last Modified time: 2016-05-12 19:42:03
+# @Last Modified by:   zengphil
+# @Last Modified time: 2016-05-20 10:20:43
 
 import time
 import pickle
@@ -29,11 +34,11 @@ from Weibo.items import UserItem
 
 class WeiboSpider(CrawlSpider):
     """docstring for WeiboSpider"""
-    name = "Weibo"
+    name = "topic3"
     allow_domains = [
         "m.weibo.cn"
     ]
-    search_content = u'西二旗'
+    search_content = u'严惩暴力伤医'
 
     start_urls = [
         "http://m.weibo.cn/k/" + search_content + '?from=feed'
@@ -52,8 +57,8 @@ class WeiboSpider(CrawlSpider):
     def parse(self, response):
         """加载页面并提取目标URL"""
         self.driver.get(response.url)
-        for i in xrange(1,30):
-            time.sleep(5)
+        for i in xrange(1,100):
+            time.sleep(np.random.choice([3,4,5,6,7,8]))
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
         # Extract Content URL #
@@ -104,8 +109,9 @@ class WeiboSpider(CrawlSpider):
         weiboItem = WeiboItem()
         time.sleep(2)
         weiboItem['Url'] = response.url
+        weiboItem['Type'] = self.search_content
         weiboItem['Name'] = self.driver.find_element_by_xpath("//div[@class='box-col item-list']/a/span").text
-        weiboItem['Content'] = self.driver.find_elements_by_xpath("//a[@href='/k/西二旗?from=feed']/..")[0].text
+        weiboItem['Content'] = self.driver.find_element_by_xpath("//a[@href='/k/严惩暴力伤医?from=feed']/..").text
         weiboItem['UID'] = re.findall(pattern, response.url)[0]
         weiboItem['Repost'] = self.driver.find_element_by_xpath("//span[@data-node='repost']/em").text
         weiboItem['Comment'] = self.driver.find_element_by_xpath("//span[@data-node='comment']/em").text
@@ -130,14 +136,15 @@ class WeiboSpider(CrawlSpider):
         userItem['FollowerNum'] = FollowerNum
 
         # New Page #
-        FollowerUrl = 'http://m.weibo.cn/page/tpl?containerid=' + u'1005051' + re.findall(pattern, response.url)[0] + '_-_FOLLOWERS'
+        FollowerUrl = self.driver.find_element_by_xpath("//a[contains(@href, 'FOLLOWERS')]").get_attribute('href')
         self.driver.get(FollowerUrl)
         time.sleep(3)
-        for i in xrange(1,(np.int(FollowerNum)/10)+7):
-            time.sleep(5)
+        for i in xrange(1,(np.int(FollowerNum)/10)):
+            time.sleep(np.random.choice([2,3,4,5,6,7,8]))
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         Users = self.driver.find_elements_by_xpath("//div[@class='layout-box media-graphic']/a[1]")
         UserList = [re.findall(pattern, user.get_attribute('href'))[0]  for user in Users]
+        userItem['CrawlFollower'] = len(UserList)
         userItem['Follower'] = '.'.join(UserList)
 
         yield userItem

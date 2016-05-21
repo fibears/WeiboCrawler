@@ -10,6 +10,7 @@ import scrapy
 
 class WeiboItem(scrapy.Item):
     # define the fields for your item here like:
+    Type = scrapy.Field()
     Name = scrapy.Field()
     Url = scrapy.Field()
     Content = scrapy.Field()
@@ -25,6 +26,7 @@ class UserItem(scrapy.Item):
     FansNum = scrapy.Field()
     FollowerNum = scrapy.Field()
     # Fans = scrapy.Field()
+    CrawlFollower = scrapy.Field()
     Follower = scrapy.Field()
 
 

@@ -33,7 +33,9 @@ ITEM_PIPELINES = {
     #'template.pipelines.RedisPipeline': 301,
 }
 
-download_delay=1
+DOWNLOAD_DELAY = 3
+DOWNLOAD_TIMEOUT = 100
+
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'Weibo (+http://www.yourdomain.com)'

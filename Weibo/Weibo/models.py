@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: fibears
 # @Date:   2016-03-11 17:09:15
-# @Last Modified by:   fibears
-# @Last Modified time: 2016-05-12 09:21:11
+# @Last Modified by:   zengphil
+# @Last Modified time: 2016-05-20 17:25:15
 
 from datetime import datetime
 from pony.orm import *
@@ -16,6 +16,7 @@ class WeiboEntity(db.Entity):
     _table_ = 'Content'
 
     id = PrimaryKey(int, size = 64, unsigned = True, auto = True)
+    Type = Optional(str)
     Name = Optional(str)
     Url = Optional(str)
     uid = Required(str)
@@ -35,6 +36,7 @@ class UserEntity(db.Entity):
     Name = Optional(str)
     FansNum = Optional(str)
     FollowerNum = Optional(str)
+    CrawlFollower = Optional(str)
     # Fans = Optional(LongUnicode)
     Follower = Optional(LongUnicode)
 
