@@ -28,13 +28,14 @@ SQLDB = {
     'db': 'Weibo'
 }
 
+
 ITEM_PIPELINES = {
     'Weibo.pipelines.WeiboPipeline': 300,
     #'template.pipelines.RedisPipeline': 301,
 }
 
-DOWNLOAD_DELAY = 3
-DOWNLOAD_TIMEOUT = 100
+DOWNLOAD_DELAY = 5
+# DOWNLOAD_TIMEOUT = 100
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent

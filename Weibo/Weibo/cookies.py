@@ -2,48 +2,61 @@
 # -*- coding: utf-8 -*-
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
-# @Last Modified by:   fibears
-# @Last Modified time: 2016-05-09 13:47:40
+# @Last Modified by:   zengphil
+# @Last Modified time: 2016-05-28 21:39:22
 
 import json
 import base64
 import requests
-import random
 
-from agents import AGENTS
 
 WeiBoAccount = [
-    {'no': 'xxxx@qq.com', 'psw': 'xxxx'},
-    {'no': 'xxxx@qq.com', 'psw': 'xxxx'},
+    {'no': '13434323771', 'psw': 'a123456'},
+    {'no': '17188348988', 'psw': 'a123456'},
+    {'no': '13166795074', 'psw': 'a123456'},
+    #{'no': '13166938986', 'psw': 'a123456'},
+    {'no': '13072490894', 'psw': 'a123456'},
+    {'no': 'paohuang75011@163.com', 'psw': 'aaa333'},
+    {'no': 'yan94832858@163.com', 'psw': 'aaa333'},
 ]
 
 
 def getCookies(weibo):
     """ 获取Cookies """
     cookies = []
-    loginURL = 'https://passport.weibo.cn/sso/login'
-    for element in weibo:
-        username = element['no']
-        password = element['psw']
+    loginURL = r'https://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.15)'
+    for elem in weibo:
+        account = elem['no']
+        password = elem['psw']
+        username = base64.b64encode(account.encode('utf-8')).decode('utf-8')
         postData = {
-            "username": username,
-            "password": password,
-        }
-        headers = {
-            'User-Agent': random.choice(AGENTS),
-            'Host': 'passport.weibo.cn',
-            'Referer': 'https://passport.weibo.cn/signin/login?entry=mweibo&res=wel&wm=3349&r=http%3A%2F%2Fm.weibo.cn%2F'
+            "entry": "sso",
+            "gateway": "1",
+            "from": "null",
+            "savestate": "30",
+            "useticket": "0",
+            "pagerefer": "",
+            "vsnf": "1",
+            "su": username,
+            "service": "sso",
+            "sp": password,
+            "sr": "1440*900",
+            "encoding": "UTF-8",
+            "cdult": "3",
+            "domain": "sina.com.cn",
+            "prelt": "0",
+            "returntype": "TEXT",
         }
         session = requests.Session()
-        r = session.post(loginURL, data=postData, headers=headers)
+        r = session.post(loginURL, data=postData)
         jsonStr = r.content.decode('utf-8')
         info = json.loads(jsonStr)
-        cookie = session.cookies.get_dict()
-        if len(cookie) != 0:
-            print "Get Cookie Success!( Account:%s )" % username
+        if info["retcode"] == "0":
+            print "Get Cookie Success!( Account:%s )" % account
+            cookie = session.cookies.get_dict()
             cookies.append(cookie)
         else:
-            print "Failed!"
+            print "Failed!( Reason:%s )" % info['reason']
     return cookies
 
 

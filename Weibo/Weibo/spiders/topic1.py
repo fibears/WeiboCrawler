@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
-# @Last Modified by:   fibears
-# @Last Modified time: 2016-05-21 12:16:01
+# @Last Modified by:   zengphil
+# @Last Modified time: 2016-05-28 23:55:40
 
 import time
 import pickle
@@ -14,140 +14,164 @@ import numpy as np
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from scrapy.selector import Selector
 from datetime import datetime
 from scrapy.http import FormRequest, Request
 
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-
-from Weibo.sqldata import SQL_ContentUrl, SQL_UserUID
-
 from Weibo.agents import AGENTS
 from Weibo.items import WeiboItem
 from Weibo.items import UserItem
+from Weibo.items import CommentItem
 
 class WeiboSpider(CrawlSpider):
     """docstring for WeiboSpider"""
     name = "topic1"
-    allow_domains = [
-        "m.weibo.cn"
-    ]
-    search_content = u'魏则西'
+    # allow_domains = [
+    #     "weibo.cn"
+    # ]
+
+    host = "http://weibo.cn"
 
     start_urls = [
-        "http://m.weibo.cn/k/" + search_content + '?from=feed'
+        u'#华为手机#',
     ]
 
-    def __init__(self):
-        with open("Weibo/cookie.txt", "r") as f:
-            self.cookieweibo = pickle.load(f)
-        self.driver = webdriver.PhantomJS()
-        self.url = "http://m.weibo.cn/u/1984250112"
-        self.driver.get(self.url)
-        for cookie in self.cookieweibo:
-            self.driver.add_cookie(cookie)
+    crawlID = set(start_urls)
+    finishID = set()
 
+    def start_requests(self):
+        while True:
+            contentID = self.crawlID.pop()
+            self.finishID.add(contentID)
 
-    def parse(self, response):
+            return [FormRequest(url = "http://weibo.cn/search/", formdata = {'keyword': contentID, 'smblog': '搜微博'}, callback=self.parse_Content)]
+
+    def parse_Content(self, response):
         """加载页面并提取目标URL"""
-        self.driver.get(response.url)
-        for i in xrange(1,500):
-            time.sleep(np.random.choice([3,4,5,6,7,8]))
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        pattern = pattern = re.compile(r'http://weibo.cn/[u/]{0,2}(\d+|\w+)')
+        sel = Selector(response)
+        Type = sel.xpath("//div/input[@name='keyword']/@value").extract_first()
+        tweets = sel.xpath('body/div[@class="c" and @id]')
+        for tweet in tweets:
+            weiboItem = WeiboItem()
+            id = tweet.xpath('@id').extract_first()
+            name = tweet.xpath("div/a[@class='nk']/text()").extract_first()
+            content = tweet.xpath('div/span[@class="ctt"]/text()').extract_first()  # 微博内容
+            UserUrl = tweet.xpath("div/a[@class='nk']/@href").extract_first()
+            like = re.findall(u'\u8d5e\[(\d+)\]', tweet.extract())
+            repost = re.findall(u'\u8f6c\u53d1\[(\d+)\]', tweet.extract())
+            comment = re.findall(u'\u8bc4\u8bba\[(\d+)\]', tweet.extract())
+            others = tweet.xpath('div/span[@class="ct"]/text()').extract_first()
 
-        # Extract Content URL #
-        URL1 = self.driver.find_elements_by_xpath("//div[contains(@class,'line-around')]")
-        ContentURL = []
-        for i in xrange(0, len(URL1)):
-            if URL1[i].get_attribute('data-jump') != None:
-                print URL1[i].get_attribute('data-jump')
-                ContentURL.append('http://m.weibo.cn' + URL1[i].get_attribute('data-jump'))
-        # Extract Users URL #
-        URL2 = self.driver.find_elements_by_xpath("//div[contains(@class,'line-around')]/header/a[contains(@class, 'mod-media')]")
-        UserURL = []
-        for i in xrange(0, len(URL2)):
-            if URL2[i].get_attribute('href') != None:
-                print URL2[i].get_attribute('href')
-                UserURL.append(URL2[i].get_attribute('href'))
+            weiboItem['ContentId'] = id
+            weiboItem['Type'] = Type
+            weiboItem['Name'] = name
+            weiboItem['UID'] = re.findall(pattern, UserUrl)[0]
+            if content:
+                weiboItem["Content"] = content.strip(u"[\u4f4d\u7f6e]")
+            if like:
+                weiboItem["Like"] = str(like[0])
+            if repost:
+                weiboItem["Repost"] = str(repost[0])
+            if comment:
+                weiboItem["Comment"] = str(comment[0])
+            if others:
+                others = others.split(u"\u6765\u81ea")
+                weiboItem["PostTime"] = others[0]
+            print weiboItem['Content']
+            yield weiboItem
 
-        # Parse URL By Different Parse Function #
-        for content_url in ContentURL:
-            if content_url not in SQL_ContentUrl:
-                headers = {
-                'User-Agent': random.choice(AGENTS),
-                'Host': 'm.weibo.cn',
-                'Referer': content_url
-                }
-                yield Request(url = content_url, headers = headers, callback = self.parseContent)
+        # Next Comment Information #
+        Comment_urls = sel.xpath("//div/a[@class='cc' and @href]/@href").extract()
+        for comment_url in Comment_urls:
+            yield Request(url = comment_url, meta={"Type": Type}, callback = self.parse_Comment)
 
-        for user_url in UserURL:
-            pattern = re.compile(r'http://m.weibo.cn/u/(\d{10})')
-            uid = re.findall(pattern, user_url)[0]
-            """判断该用户是否存在数据库中"""
-            if uid not in SQL_UserUID:
-                headers = {
-                'User-Agent': random.choice(AGENTS),
-                'Host': 'm.weibo.cn',
-                'Referer': user_url
-                }
+        # Next User Information #
+        User_urls = sel.xpath("//div/a[@class='nk']/@href").extract()
+        for user_url in User_urls:
+            yield Request(url = user_url, callback = self.parse_User)
 
-                yield Request(url = user_url, headers = headers, callback = self.parseUser)
+    def parse_Comment(self, response):
+        """加载评论数据"""
+        sel = Selector(response)
+        tweets = sel.xpath('body/div[@class="c" and @id]')
+        Type = response.meta["Type"]
+        for tweet in tweets:
+            Cond1 = tweet.xpath('a/@href').extract_first()
+            if Cond1:
+                commentItem = CommentItem()
+                name = tweet.xpath('a/text()').extract_first()
+                id = tweet.xpath('@id').extract_first()
+                content = tweet.xpath('span[@class="ctt"]/text()').extract()
+                uid = re.findall("uid=(\d+)", tweet.xpath("a[2]/@href").extract_first())[0]
+                others = tweet.xpath('span[@class="ct"]/text()').extract_first()
 
-    # Parse Content Information #
-    def parseContent(self, response):
-        self.logger.info("Parse ContentInformation!!!")
-        self.logger.info("This url has been identified - " + response.url)
-        self.driver.get(response.url)
-        pattern = re.compile(r'http://m.weibo.cn/(\d{10})/.*?')
-        # Weibo Content #
-        weiboItem = WeiboItem()
-        time.sleep(2)
-        weiboItem['Url'] = response.url
-        weiboItem['Type'] = self.search_content
-        try:
-            weiboItem['Name'] = self.driver.find_element_by_xpath("//div[@class='box-col item-list']/a/span").text
-        weiboItem['Content'] = self.driver.find_element_by_xpath("//a[@href='/k/魏则西?from=feed']/..").text
-        weiboItem['UID'] = re.findall(pattern, response.url)[0]
-        weiboItem['Repost'] = self.driver.find_element_by_xpath("//span[@data-node='repost']/em").text
-        weiboItem['Comment'] = self.driver.find_element_by_xpath("//span[@data-node='comment']/em").text
-        weiboItem['Like'] = self.driver.find_element_by_xpath("//span[@data-node='like']/em").text
-        weiboItem['PostTime'] = self.driver.find_element_by_xpath("//span[@class='time']").text
-        # self.driver.close()
-        yield weiboItem
+                commentItem['Type'] = Type
+                commentItem['Name'] = name
+                commentItem['CommentId'] = id
+                commentItem['UID'] = uid
+                if len(content) > 1:
+                    commentItem["Content"] = content[1].strip(u"[\u4f4d\u7f6e]")
+                else:
+                    commentItem["Content"] = content[0].strip(u"[\u4f4d\u7f6e]")
+                if others:
+                    others = others.split(u"\u6765\u81ea")
+                    commentItem['PostTime'] = others[0]
+                print commentItem["Content"]
+                yield commentItem
 
-    # Parse Users Information #
-    def parseUser(self, response):
-        self.logger.info("Parse UserInformation!!!")
-        self.logger.info("This url has been identified - " + response.url)
-        self.driver.get(response.url)
-        pattern = re.compile(r'http://m.weibo.cn/u/(\d{10})')
-        # User Information #
+        # Next User Information #
+        User_urls = sel.xpath("//div[@class='c' and @id]/a[1]/@href").extract()
+        for user_url in User_urls:
+            if user_url:
+                yield Request(url = self.host + user_url, callback = self.parse_User)
+
+        # Next Page #
+
+
+    def parse_User(self, response):
+        """加载页面并提取用户信息"""
+        sel = Selector(response)
         userItem = UserItem()
-        time.sleep(2)
-        userItem['UID'] = re.findall(pattern, response.url)[0]
-        userItem['Name'] = self.driver.find_element_by_xpath("//div[@class= 'item-main txt-xl txt-cut']/span").text
-        userItem['FansNum'] = self.driver.find_element_by_xpath("//a[contains(@href, 'FANS')]/div[@class='mct-a txt-s']").text
-        FollowerNum = self.driver.find_element_by_xpath("//a[contains(@href, 'FOLLOWERS')]/div[@class='mct-a txt-s']").text
-        userItem['FollowerNum'] = FollowerNum
+        FollowerUrl = sel.xpath("//div/a[contains(@href, 'follow')]/@href").extract_first()
+        if FollowerUrl:
+            userItem['UID'] = re.findall('\d{10}', FollowerUrl)[0]
+        userItem['Name'] = sel.xpath("//div[@class='ut']/span[1]/text()").extract_first()
+        text0 = sel.xpath("//div[@class='tip2']").extract_first()
+        if text0:
+            num_tweets = re.findall(u'\u5fae\u535a\[(\d+)\]', text0)
+            num_follows = re.findall(u'\u5173\u6ce8\[(\d+)\]', text0)
+            num_fans = re.findall(u'\u7c89\u4e1d\[(\d+)\]', text0)
+            if num_tweets:
+                userItem["TweetsNum"] = str(num_tweets[0])
+            if num_follows:
+                userItem["FollowersNum"] = str(num_follows[0])
+            if num_fans:
+                userItem["FansNum"] = str(num_fans[0])
+        Follower = []
+        yield Request(url = self.host + FollowerUrl, meta={"item": userItem, "follower": Follower}, callback = self.parse_Follower)
 
-        # New Page #
-        FollowerUrl = self.driver.find_element_by_xpath("//a[contains(@href, 'FOLLOWERS')]").get_attribute('href')
-        self.driver.get(FollowerUrl)
-        time.sleep(3)
-        for i in xrange(1,(np.int(FollowerNum)/10 + 4)):
-            time.sleep(np.random.choice([2,3,4,5,6,7,8]))
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        Users = self.driver.find_elements_by_xpath("//div[@class='layout-box media-graphic']/a[1]")
-        UserList = [re.findall(pattern, user.get_attribute('href'))[0]  for user in Users]
-        userItem['CrawlFollower'] = str(len(UserList))
-        userItem['Follower'] = '.'.join(UserList)
-        yield userItem
+    def parse_Follower(self, response):
+        """提取用户粉丝数据"""
+        userItem = response.meta['item']
+        sel = Selector(response)
+        text2 = sel.xpath(
+            u'body//table/tr/td/a[text()="\u5173\u6ce8\u4ed6" or text()="\u5173\u6ce8\u5979"]/@href').extract()
+        for element in text2:
+            elem = re.findall('uid=(\d+)', element)
+            if elem:
+                response.meta['follower'].append(elem[0])
 
-
-
-
-
-
+        url_nextpage = sel.xpath(
+            u'body//div[@class="pa" and @id="pagelist"]/form/div/a[text()="\u4e0b\u9875"]/@href').extract()
+        if url_nextpage:
+            yield Request(url=self.host + url_nextpage[0], meta={"item": userItem, "follower": response.meta["follower"]},
+                          callback=self.parse_Follower)
+        else:
+            Follower = response.meta['follower']
+            userItem['CrawlFollowers'] = str(len(Follower))
+            userItem['Follower'] = '.'.join(Follower)
+            yield userItem
 
 

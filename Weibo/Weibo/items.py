@@ -12,7 +12,7 @@ class WeiboItem(scrapy.Item):
     # define the fields for your item here like:
     Type = scrapy.Field()
     Name = scrapy.Field()
-    Url = scrapy.Field()
+    ContentId = scrapy.Field()
     Content = scrapy.Field()
     UID = scrapy.Field()
     Repost = scrapy.Field()
@@ -20,13 +20,23 @@ class WeiboItem(scrapy.Item):
     Like = scrapy.Field()
     PostTime = scrapy.Field()
 
+class CommentItem(scrapy.Item):
+    Type = scrapy.Field()
+    Name = scrapy.Field()
+    CommentId = scrapy.Field()
+    Content = scrapy.Field()
+    UID = scrapy.Field()
+    PostTime = scrapy.Field()
+
+
 class UserItem(scrapy.Item):
     UID = scrapy.Field()
     Name = scrapy.Field()
+    TweetsNum = scrapy.Field()
     FansNum = scrapy.Field()
-    FollowerNum = scrapy.Field()
+    FollowersNum = scrapy.Field()
     # Fans = scrapy.Field()
-    CrawlFollower = scrapy.Field()
+    CrawlFollowers = scrapy.Field()
     Follower = scrapy.Field()
 
 
