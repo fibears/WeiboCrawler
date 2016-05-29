@@ -3,7 +3,7 @@
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
 # @Last Modified by:   zengphil
-# @Last Modified time: 2016-05-28 23:55:40
+# @Last Modified time: 2016-05-29 14:18:08
 
 import time
 import pickle
@@ -34,7 +34,7 @@ class WeiboSpider(CrawlSpider):
     host = "http://weibo.cn"
 
     start_urls = [
-        u'#华为手机#',
+        u'#苹果手机#',
     ]
 
     crawlID = set(start_urls)
@@ -92,6 +92,17 @@ class WeiboSpider(CrawlSpider):
         for user_url in User_urls:
             yield Request(url = user_url, callback = self.parse_User)
 
+        # Next Content Page #
+        Content_nextpage = sel.xpath(
+            u'body//div[@class="pa" and @id="pagelist"]/form/div/a[text()="\u4e0b\u9875"]/@href').extract()
+
+        if Content_nextpage:
+            yield Request(url=self.host + Content_nextpage[0],
+                          callback=self.parse_Content)
+        else:
+            print 'No more Search Content!!!'
+
+
     def parse_Comment(self, response):
         """加载评论数据"""
         sel = Selector(response)
@@ -127,7 +138,15 @@ class WeiboSpider(CrawlSpider):
             if user_url:
                 yield Request(url = self.host + user_url, callback = self.parse_User)
 
-        # Next Page #
+        # Next Comment Page #
+        Comment_nextpage = sel.xpath(
+            u'body//div[@class="pa" and @id="pagelist"]/form/div/a[text()="\u4e0b\u9875"]/@href').extract()
+
+        if Comment_nextpage:
+            yield Request(url=self.host + Comment_nextpage[0],
+                          callback=self.parse_Comment)
+        else:
+            print 'No more Search Comment!!!'
 
 
     def parse_User(self, response):
@@ -150,7 +169,8 @@ class WeiboSpider(CrawlSpider):
             if num_fans:
                 userItem["FansNum"] = str(num_fans[0])
         Follower = []
-        yield Request(url = self.host + FollowerUrl, meta={"item": userItem, "follower": Follower}, callback = self.parse_Follower)
+        if FollowerUrl:
+            yield Request(url = self.host + FollowerUrl, meta={"item": userItem, "follower": Follower}, callback = self.parse_Follower)
 
     def parse_Follower(self, response):
         """提取用户粉丝数据"""

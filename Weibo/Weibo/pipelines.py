@@ -95,7 +95,7 @@ class WeiboPipeline(object):
                         Name = item['Name'],
                         TweetsNum = item['TweetsNum'],
                         FansNum = item['FansNum'],
-                        FollowerNum = item['FollowersNum'],
+                        FollowersNum = item['FollowersNum'],
                         CrawlFollowers = item['CrawlFollowers'],
                         Follower = item['Follower']
                     )
