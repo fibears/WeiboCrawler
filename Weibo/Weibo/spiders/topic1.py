@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
-# @Last Modified by:   zengphil
-# @Last Modified time: 2016-05-29 14:18:08
+# @Last Modified by:   fibears
+# @Last Modified time: 2016-06-01 10:23:09
 
 import time
 import pickle
 import random
 import re
 import numpy as np
+import urllib
 
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
@@ -27,30 +28,42 @@ from Weibo.items import CommentItem
 class WeiboSpider(CrawlSpider):
     """docstring for WeiboSpider"""
     name = "topic1"
-    # allow_domains = [
-    #     "weibo.cn"
-    # ]
+
+    allow_domains = [
+        "weibo.cn"
+    ]
 
     host = "http://weibo.cn"
 
     start_urls = [
-        u'#苹果手机#',
+        u'#华为手机#',
     ]
 
     crawlID = set(start_urls)
     finishID = set()
+    ContentPage = 1
+    TotalPage = 0
+    SelectedID = ''
 
     def start_requests(self):
         while True:
             contentID = self.crawlID.pop()
             self.finishID.add(contentID)
+            self.SelectedID = contentID
 
             return [FormRequest(url = "http://weibo.cn/search/", formdata = {'keyword': contentID, 'smblog': '搜微博'}, callback=self.parse_Content)]
 
     def parse_Content(self, response):
         """加载页面并提取目标URL"""
-        pattern = pattern = re.compile(r'http://weibo.cn/[u/]{0,2}(\d+|\w+)')
+        # Count Page #
+        self.ContentPage += 1
+
+        pattern = re.compile(r'http://weibo.cn/[u/]{0,2}(\d+|\w+)')
         sel = Selector(response)
+        if self.ContentPage == 2:
+            Num = sel.xpath(
+            u'body//div[@class="pa" and @id="pagelist"]/form/div/input[@type="hidden"]/@value').extract()
+            self.TotalPage = int(Num[0])
         Type = sel.xpath("//div/input[@name='keyword']/@value").extract_first()
         tweets = sel.xpath('body/div[@class="c" and @id]')
         for tweet in tweets:
@@ -93,11 +106,15 @@ class WeiboSpider(CrawlSpider):
             yield Request(url = user_url, callback = self.parse_User)
 
         # Next Content Page #
-        Content_nextpage = sel.xpath(
-            u'body//div[@class="pa" and @id="pagelist"]/form/div/a[text()="\u4e0b\u9875"]/@href').extract()
+        PageData = {
+        'hideSearchFrame':'',
+        'keyword':self.SelectedID.encode('utf-8'),
+        'page':self.ContentPage
+        }
+        Content_nextpage = '/search/mblog?' + urllib.urlencode(PageData)
 
-        if Content_nextpage:
-            yield Request(url=self.host + Content_nextpage[0],
+        if self.ContentPage < self.TotalPage:
+            yield Request(url=self.host + Content_nextpage,
                           callback=self.parse_Content)
         else:
             print 'No more Search Content!!!'

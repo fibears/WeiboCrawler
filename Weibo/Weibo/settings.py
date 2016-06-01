@@ -16,8 +16,8 @@ NEWSPIDER_MODULE = 'Weibo.spiders'
 DOWNLOAD_HANDLERS = {'s3': None}
 
 DOWNLOADER_MIDDLEWARES = {
-    'Weibo.middlewares.ProxyMiddleware': 100,
-    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+    # 'Weibo.middlewares.ProxyMiddleware': 100,
+    # 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
     'Weibo.middlewares.CustomUserAgentMiddleware': 401,
     'Weibo.middlewares.CustomCookieMiddleware': 402,
 }
