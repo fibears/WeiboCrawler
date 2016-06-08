@@ -3,7 +3,7 @@
 # @Author: fibears
 # @Date:   2016-05-05 15:21:59
 # @Last Modified by:   fibears
-# @Last Modified time: 2016-06-01 10:23:09
+# @Last Modified time: 2016-06-08 11:56:54
 
 import time
 import pickle
@@ -36,7 +36,7 @@ class WeiboSpider(CrawlSpider):
     host = "http://weibo.cn"
 
     start_urls = [
-        u'#华为手机#',
+        u'#华为手机#',u'苹果手机'
     ]
 
     crawlID = set(start_urls)
@@ -46,11 +46,9 @@ class WeiboSpider(CrawlSpider):
     SelectedID = ''
 
     def start_requests(self):
-        while True:
-            contentID = self.crawlID.pop()
+        for contentID in self.crawlID:
             self.finishID.add(contentID)
             self.SelectedID = contentID
-
             return [FormRequest(url = "http://weibo.cn/search/", formdata = {'keyword': contentID, 'smblog': '搜微博'}, callback=self.parse_Content)]
 
     def parse_Content(self, response):
